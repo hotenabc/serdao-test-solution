@@ -73,3 +73,64 @@ docker build -t serdao_symfony_app .
 
 Here, -t is used to tag the image with a name (serdao_symfony_app in this case).
 
+10. Verifying the Image
+Once the build process completes, we can verify that the image is created successfully by running:
+
+bash
+docker images
+
+We should see the newly built image in the list.
+
+11. Compose File for Symfony
+Create a docker-compose.yml file in our Symfony project’s root directory and define the services required for our Symfony application:
+
+yaml
+version: '3.8'
+
+services:
+  php:
+    build: .
+    container_name: serdao_symfony_app
+    volumes:
+      - .:/var/www/html
+    ports:
+      - "9000:9000"
+    depends_on:
+      - db
+    environment:
+      APP_ENV: dev
+      SYMFONY_DOTENV_VARS: APP_ENV
+    networks:
+      - symfony_net
+
+  db:
+    image: mysql:5.7
+    container_name: serdao_symfony_db
+    environment:
+      MYSQL_ROOT_PASSWORD: root_password
+      MYSQL_DATABASE: symfony_db
+      MYSQL_USER: symfony_user
+      MYSQL_PASSWORD: symfony_password
+    volumes:
+      - db_data:/var/lib/mysql
+    networks:
+      - symfony_net
+
+networks:
+  symfony_net:
+    driver: bridge
+
+volumes:
+  db_data:
+
+12. Configuring Symfony for Database Connection
+Next, we need to update Symfony’s database configuration to use the database container. In the config/packages/doctrine.yaml file, configure the database connection as follows:
+
+yaml
+doctrine:
+    dbal:
+        driver: pdo_mysql
+        url: '%env(resolve:DATABASE_URL)%'
+By using the %env(resolve:DATABASE_URL)% placeholder, Symfony will fetch the value of the DATABASE_URL environment variable from the container’s environment.
+
+With this configuration, Symfony should now be able to connect to the MySQL database running in the separate db container.
