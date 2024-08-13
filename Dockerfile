@@ -1,15 +1,10 @@
-ARG IMAGE_VERSION_BUILD=latest
-ARG IMAGE_VERSION=18.14.2-bullseye-slim
-ARG NODE_ENV=development
-
-FROM node:${IMAGE_VERSION_BUILD} AS build
-RUN apt-get update && apt-get install -y --no-install-recommends dumb-init
-
-FROM node:${IMAGE_VERSION}
-ENV NODE_ENV ${NODE_ENV}
-COPY --from=build /usr/bin/dumb-init /usr/bin/dumb-init
-RUN mkdir /usr/src/app
-RUN chown node:node /usr/src/app
-WORKDIR /usr/src/app
-USER node
-CMD ["dumb-init", "npm", "run", "start"]
+FROM php:8.0-fpm
+WORKDIR /var/www/html
+COPY . /var/www/html
+RUN apt-get update \
+    && apt-get install -y libzip-dev zip \
+    && docker-php-ext-configure zip --with-libzip \
+    && docker-php-ext-install zip pdo pdo_mysql
+RUN curl -sS https://getcomposer.org/installer | php -- --install-dir=/usr/local/bin --filename=composer
+RUN composer install
+EXPOSE 9000
